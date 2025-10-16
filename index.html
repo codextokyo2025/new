@@ -1,2 +1,506 @@
-Helloworld
-2行目テスト
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スライディングパズルゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .info-item {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .info-item span {
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        #puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-template-rows: repeat(4, 100px);
+            gap: 5px;
+            margin: 0 auto 20px;
+            background: #e0e0e0;
+            padding: 5px;
+            border-radius: 10px;
+            width: fit-content;
+        }
+
+        .tile {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400%;
+            height: 400%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="crownGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:rgb(255,215,0);stop-opacity:0.8" /><stop offset="100%" style="stop-color:rgb(218,165,32);stop-opacity:0.6" /></linearGradient></defs><path d="M 50 180 L 80 120 L 110 180 L 140 100 L 170 180 L 200 80 L 230 180 L 260 100 L 290 180 L 320 120 L 350 180 L 350 320 L 50 320 Z" fill="url(%23crownGrad)" stroke="rgb(184,134,11)" stroke-width="3"/><circle cx="200" cy="60" r="25" fill="rgb(255,215,0)" stroke="rgb(184,134,11)" stroke-width="2"/><circle cx="140" cy="85" r="20" fill="rgb(255,215,0)" stroke="rgb(184,134,11)" stroke-width="2"/><circle cx="260" cy="85" r="20" fill="rgb(255,215,0)" stroke="rgb(184,134,11)" stroke-width="2"/><ellipse cx="200" cy="250" rx="60" ry="40" fill="rgb(139,0,0)" opacity="0.7"/></svg>');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: var(--bg-x, 0%) var(--bg-y, 0%);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        .tile-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tile:active {
+            transform: scale(0.95);
+        }
+
+        .empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .empty:hover {
+            transform: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .win-message {
+            display: none;
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .difficulty {
+            margin-bottom: 20px;
+        }
+
+        .difficulty label {
+            color: #333;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .difficulty select {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 2px solid #667eea;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .crown {
+            font-size: 150px;
+            text-align: center;
+            margin: 20px 0;
+            animation: crownAppear 1s ease, crownFloat 2s ease-in-out infinite;
+        }
+
+        @keyframes crownAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0) rotate(-180deg);
+            }
+            50% {
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        @keyframes crownFloat {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @media (max-width: 600px) {
+            #puzzle-container {
+                grid-template-columns: repeat(4, 70px);
+                grid-template-rows: repeat(4, 70px);
+            }
+
+            .tile {
+                font-size: 1.2em;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .crown {
+                font-size: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 スライディングパズル</h1>
+        
+        <div class="difficulty">
+            <label for="difficulty-select">難易度:</label>
+            <select id="difficulty-select">
+                <option value="easy">簡単 (10手)</option>
+                <option value="medium" selected>普通 (30手)</option>
+                <option value="hard">難しい (50手)</option>
+            </select>
+        </div>
+
+        <div class="info">
+            <div class="info-item">
+                移動数: <span id="moves">0</span>
+            </div>
+            <div class="info-item">
+                時間: <span id="time">0</span>秒
+            </div>
+        </div>
+
+        <div id="puzzle-container"></div>
+
+        <div class="buttons">
+            <button onclick="newGame()">新しいゲーム</button>
+            <button onclick="solveHint()">ヒント</button>
+        </div>
+
+        <div class="win-message" id="win-message">
+            🎉 おめでとうございます！クリアしました！🎉
+            <div class="crown" id="crown">👑</div>
+        </div>
+    </div>
+
+    <script>
+        let tiles = [];
+        let emptyIndex = 15;
+        let moves = 0;
+        let timer = null;
+        let seconds = 0;
+        let isGameActive = false;
+
+        // 数字をローマ数字に変換
+        function toRoman(num) {
+            const romanNumerals = [
+                ['XV', 15], ['XIV', 14], ['XIII', 13], ['XII', 12], ['XI', 11], ['X', 10],
+                ['IX', 9], ['VIII', 8], ['VII', 7], ['VI', 6], ['V', 5],
+                ['IV', 4], ['III', 3], ['II', 2], ['I', 1]
+            ];
+            
+            for (let [roman, value] of romanNumerals) {
+                if (num === value) {
+                    return roman;
+                }
+            }
+            return num.toString();
+        }
+
+        // ゲーム初期化
+        function initGame() {
+            tiles = Array.from({length: 15}, (_, i) => i + 1);
+            tiles.push(null); // 空のタイル
+            emptyIndex = 15;
+            moves = 0;
+            seconds = 0;
+            isGameActive = false;
+            
+            updateDisplay();
+            clearInterval(timer);
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('time').textContent = '0';
+            document.getElementById('win-message').style.display = 'none';
+        }
+
+        // パズルをシャッフル
+        function shufflePuzzle() {
+            const difficulty = document.getElementById('difficulty-select').value;
+            let shuffleMoves;
+            
+            switch(difficulty) {
+                case 'easy':
+                    shuffleMoves = 10;
+                    break;
+                case 'hard':
+                    shuffleMoves = 50;
+                    break;
+                default:
+                    shuffleMoves = 30;
+            }
+
+            for (let i = 0; i < shuffleMoves; i++) {
+                const validMoves = getValidMoves();
+                const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                swapTiles(randomMove, emptyIndex, false);
+            }
+            
+            updateDisplay();
+        }
+
+        // 有効な移動先を取得
+        function getValidMoves() {
+            const moves = [];
+            const row = Math.floor(emptyIndex / 4);
+            const col = emptyIndex % 4;
+
+            if (row > 0) moves.push(emptyIndex - 4); // 上
+            if (row < 3) moves.push(emptyIndex + 4); // 下
+            if (col > 0) moves.push(emptyIndex - 1); // 左
+            if (col < 3) moves.push(emptyIndex + 1); // 右
+
+            return moves;
+        }
+
+        // タイルを入れ替え
+        function swapTiles(index1, index2, countMove = true) {
+            [tiles[index1], tiles[index2]] = [tiles[index2], tiles[index1]];
+            emptyIndex = index1;
+            
+            if (countMove) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+            }
+        }
+
+        // タイルクリック処理
+        function tileClick(index) {
+            if (!isGameActive) {
+                isGameActive = true;
+                startTimer();
+            }
+
+            if (canMove(index)) {
+                swapTiles(index, emptyIndex);
+                updateDisplay();
+                
+                if (checkWin()) {
+                    endGame();
+                }
+            }
+        }
+
+        // タイルが移動可能かチェック
+        function canMove(index) {
+            const validMoves = getValidMoves();
+            return validMoves.includes(index);
+        }
+
+        // 表示を更新
+        function updateDisplay() {
+            const container = document.getElementById('puzzle-container');
+            container.innerHTML = '';
+
+            tiles.forEach((tile, index) => {
+                const button = document.createElement('button');
+                button.className = 'tile';
+                
+                if (tile === null) {
+                    button.className += ' empty';
+                } else {
+                    // 現在の位置に基づいて王冠の背景位置を計算
+                    const row = Math.floor(index / 4);
+                    const col = index % 4;
+                    const bgPosX = -col * 100;
+                    const bgPosY = -row * 100;
+                    
+                    button.style.setProperty('--bg-x', `${bgPosX}%`);
+                    button.style.setProperty('--bg-y', `${bgPosY}%`);
+                    
+                    const content = document.createElement('span');
+                    content.className = 'tile-content';
+                    content.textContent = toRoman(tile);
+                    button.appendChild(content);
+                    button.onclick = () => tileClick(index);
+                }
+                
+                container.appendChild(button);
+            });
+        }
+
+        // 勝利判定
+        function checkWin() {
+            for (let i = 0; i < 15; i++) {
+                if (tiles[i] !== i + 1) {
+                    return false;
+                }
+            }
+            return tiles[15] === null;
+        }
+
+        // タイマー開始
+        function startTimer() {
+            timer = setInterval(() => {
+                seconds++;
+                document.getElementById('time').textContent = seconds;
+            }, 1000);
+        }
+
+        // ゲーム終了
+        function endGame() {
+            isGameActive = false;
+            clearInterval(timer);
+            document.getElementById('win-message').style.display = 'block';
+            
+            // 花火エフェクト的な演出
+            setTimeout(() => {
+                alert(`🎊 クリアおめでとうございます！\n移動数: ${moves}\n時間: ${seconds}秒`);
+            }, 500);
+        }
+
+        // 新しいゲーム
+        function newGame() {
+            initGame();
+            shufflePuzzle();
+        }
+
+        // ヒント機能
+        function solveHint() {
+            if (!isGameActive) return;
+            
+            const validMoves = getValidMoves();
+            if (validMoves.length > 0) {
+                // 正解に近づく移動を探す（簡易版）
+                let bestMove = validMoves[0];
+                let bestScore = -1;
+                
+                validMoves.forEach(move => {
+                    const tile = tiles[move];
+                    if (tile !== null) {
+                        const correctPos = tile - 1;
+                        const currentDist = Math.abs(Math.floor(move / 4) - Math.floor(correctPos / 4)) + 
+                                          Math.abs(move % 4 - correctPos % 4);
+                        const newDist = Math.abs(Math.floor(emptyIndex / 4) - Math.floor(correctPos / 4)) + 
+                                      Math.abs(emptyIndex % 4 - correctPos % 4);
+                        
+                        if (newDist < currentDist && (bestScore === -1 || newDist < bestScore)) {
+                            bestMove = move;
+                            bestScore = newDist;
+                        }
+                    }
+                });
+                
+                // ヒントのタイルを強調
+                const container = document.getElementById('puzzle-container');
+                const buttons = container.getElementsByClassName('tile');
+                buttons[bestMove].style.transform = 'scale(1.1)';
+                buttons[bestMove].style.boxShadow = '0 0 20px #ffd700';
+                
+                setTimeout(() => {
+                    buttons[bestMove].style.transform = '';
+                    buttons[bestMove].style.boxShadow = '';
+                }, 1000);
+            }
+        }
+
+        // 初期化
+        window.onload = () => {
+            initGame();
+            shufflePuzzle();
+        };
+    </script>
+</body>
+</html>
